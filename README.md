@@ -1,2 +1,2 @@
 # cartes-avis
-QR CODES Dynamiques pour cartes NFC avis google
+QR CODES Dynamiques pour cartes NFC avis google (v2)
