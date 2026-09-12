@@ -5,56 +5,50 @@
     <title>Redirection en cours...</title>
 </head>
 <body>
-    <p>Recherche du commerce...</p>
+    <p>Recherche du commerce en cours...</p>
 
     <script>
-        const urlBaseDeDonnees = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSblQHu62cGpGf_U39E0AFcYVGA17N0gcv4kyBbTdyOlLnQBbjpt_ig_0u4zpqdwWmdVMoGFk_DSOW4/pub?output=tsv";
+        const urlBaseDeDonnees = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSblQHu62cGpGf_U39E0AFcYVGA17N0gcv4kyBbTdyOlLnQBbjpt_ig_0u4zpqdwWmdVMoGFk_DSOW4/pub?gid=0&single=true&output=tsv";
 
         const urlParams = new URLSearchParams(window.location.search);
         const carteId = urlParams.get('c');
 
         if (carteId) {
-            // Force la mise à jour sans passer par la mémoire cache du navigateur
             fetch(urlBaseDeDonnees + "&t=" + new Date().getTime())
                 .then(response => response.text())
                 .then(texte => {
                     const lignes = texte.split(/\r?\n/);
-                    let lienTrouve = "";
-                    let carteExiste = false;
+                    let lienFinal = "";
 
-                    for (let i = 1; i < lignes.length; i++) {
+                    for (let i = 0; i < lignes.length; i++) {
                         if (!lignes[i].trim()) continue;
                         const colonnes = lignes[i].split('\t');
                         const idLigne = colonnes[0] ? colonnes[0].trim() : "";
-                        
+
+                        // Si on trouve la ligne de la carte recherchée
                         if (idLigne === carteId.trim()) {
-                            carteExiste = true;
-                            
-                            // 1. Essaye de lire la 5e colonne (index 4) : Lien avis google
-                            if (colonnes[4] && colonnes[4].trim().startsWith("http")) {
-                                lienTrouve = colonnes[4].trim();
-                            } 
-                            // 2. Secours : si la 5e colonne est vide, utilise la 4e colonne (index 3) : Place ID
-                            else if (colonnes[3] && colonnes[3].trim().length > 5) {
-                                lienTrouve = "https://search.google.com/local/writereview?placeid=" + colonnes[3].trim();
+                            // On cherche le lien HTTP dans n'importe laquelle des dernières colonnes de la ligne
+                            for (let j = colonnes.length - 1; j >= 0; j--) {
+                                if (colonnes[j] && colonnes[j].trim().startsWith("http")) {
+                                    lienFinal = colonnes[j].trim();
+                                    break;
+                                }
                             }
                             break;
                         }
                     }
 
-                    if (lienTrouve) {
-                        window.location.replace(lienTrouve);
-                    } else if (carteExiste) {
-                        document.body.innerHTML = "<h1>Carte N° " + carteId + " trouvée, mais le Place ID / Lien est vide dans le tableau.</h1>";
+                    if (lienFinal) {
+                        window.location.replace(lienFinal);
                     } else {
-                        document.body.innerHTML = "<h1>La carte N° " + carteId + " n'a pas été trouvée dans la base de données.</h1>";
+                        document.body.innerHTML = "<h1>Erreur : La carte " + carteId + " existe mais aucun lien valide n'a été trouvé dans la ligne.</h1>";
                     }
                 })
                 .catch(erreur => {
-                    document.body.innerHTML = "<h1>Erreur de connexion à la base de données.</h1>";
+                    document.body.innerHTML = "<h1>Erreur de connexion au tableur.</h1>";
                 });
         } else {
-            document.body.innerHTML = "<h1>Erreur : Aucune carte scannée.</h1>";
+            document.body.innerHTML = "<h1>Erreur : Aucune carte spécifiée.</h1>";
         }
     </script>
 </body>
