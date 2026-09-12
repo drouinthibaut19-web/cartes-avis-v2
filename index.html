@@ -8,7 +8,7 @@
     <p>Recherche du commerce...</p>
 
     <script>
-        // Remplacez le lien ci-dessous par votre lien Google Sheets (.TSV)
+        // Lien de votre Google Sheets (.TSV)
         const urlBaseDeDonnees = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSczZlwA3mitoh7y8tdLsuv6yCdUXaWBThs0OALXv5GIuLJM2n2vNOMRNplJipkC-GOuDp9FhdHsiWA/pub?output=tsv";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -19,20 +19,23 @@
                 .then(response => response.text())
                 .then(texte => {
                     const lignes = texte.split('\n');
-                    let lienTrouve = "";
+                    let placeIdTrouve = "";
 
                     for (let i = 1; i < lignes.length; i++) {
                         const colonnes = lignes[i].split('\t');
                         const idLigne = colonnes[0] ? colonnes[0].trim() : "";
                         
                         if (idLigne === carteId) {
-                            lienTrouve = colonnes[2] ? colonnes[2].trim() : "";
+                            // On récupère le Place ID (par exemple dans la colonne d'index 2 ou changez le chiffre selon votre colonne)
+                            placeIdTrouve = colonnes[2] ? colonnes[2].trim() : "";
                             break;
                         }
                     }
 
-                    if (lienTrouve && lienTrouve.startsWith("http")) {
-                        window.location.replace(lienTrouve);
+                    if (placeIdTrouve) {
+                        // On assemble automatiquement le lien complet avec le Place ID trouvé
+                        const lienFinal = "https://search.google.com/local/writereview?placeid=" + placeIdTrouve;
+                        window.location.replace(lienFinal);
                     } else {
                         document.body.innerHTML = "<h1>Cette carte n'est pas encore configurée.</h1>";
                     }
