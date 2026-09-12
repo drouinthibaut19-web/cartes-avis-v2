@@ -14,27 +14,40 @@
         const carteId = urlParams.get('c');
 
         if (carteId) {
-            fetch(urlBaseDeDonnees)
+            // Force la mise à jour sans passer par la mémoire cache du navigateur
+            fetch(urlBaseDeDonnees + "&t=" + new Date().getTime())
                 .then(response => response.text())
                 .then(texte => {
-                    const lignes = texte.split('\n');
+                    const lignes = texte.split(/\r?\n/);
                     let lienTrouve = "";
+                    let carteExiste = false;
 
                     for (let i = 1; i < lignes.length; i++) {
+                        if (!lignes[i].trim()) continue;
                         const colonnes = lignes[i].split('\t');
                         const idLigne = colonnes[0] ? colonnes[0].trim() : "";
                         
-                        if (idLigne === carteId) {
-                            // Lit la 5e colonne (index 4) : N° carte (0), Commerce (1), Ville (2), Place ID (3), Lien final (4)
-                            lienTrouve = colonnes[4] ? colonnes[4].trim() : "";
+                        if (idLigne === carteId.trim()) {
+                            carteExiste = true;
+                            
+                            // 1. Essaye de lire la 5e colonne (index 4) : Lien avis google
+                            if (colonnes[4] && colonnes[4].trim().startsWith("http")) {
+                                lienTrouve = colonnes[4].trim();
+                            } 
+                            // 2. Secours : si la 5e colonne est vide, utilise la 4e colonne (index 3) : Place ID
+                            else if (colonnes[3] && colonnes[3].trim().length > 5) {
+                                lienTrouve = "https://search.google.com/local/writereview?placeid=" + colonnes[3].trim();
+                            }
                             break;
                         }
                     }
 
-                    if (lienTrouve && lienTrouve.startsWith("http")) {
+                    if (lienTrouve) {
                         window.location.replace(lienTrouve);
+                    } else if (carteExiste) {
+                        document.body.innerHTML = "<h1>Carte N° " + carteId + " trouvée, mais le Place ID / Lien est vide dans le tableau.</h1>";
                     } else {
-                        document.body.innerHTML = "<h1>Cette carte n'est pas encore configurée.</h1>";
+                        document.body.innerHTML = "<h1>La carte N° " + carteId + " n'a pas été trouvée dans la base de données.</h1>";
                     }
                 })
                 .catch(erreur => {
